@@ -6,6 +6,13 @@ from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from confluent_kafka import Producer
 
+
+class Student:
+    def __init__(self, name, marks):
+        self.name = name
+        self.marks = marks
+
+
 if __name__ == '__main__':
     # Parse the command line.
     parser = ArgumentParser()
@@ -20,29 +27,28 @@ if __name__ == '__main__':
     # Create Producer instance
     producer = Producer(config)
 
-    # Optional per-message delivery callback (triggered by poll() or flush())
-    # when a message has been successfully delivered or permanently
-    # failed delivery (after retries).
+
     def delivery_callback(err, msg):
         if err:
             print('ERROR: Message failed delivery: {}'.format(err))
         else:
             print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
                 topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+            # Generate random student data
 
-    # Produce data by selecting random values from these lists.
-    topic = "purchases"
-    user_ids = ['eabara', 'jsmith', 'sgarcia', 'jbernard', 'htanaka', 'awalther']
-    products = ['book', 'alarm clock', 't-shirts', 'gift card', 'batteries']
+    topic = "grades"
+    students = [
+        Student("Alice", [90, 85, 95]),
+        Student("Bob", [80, 75, 70]),
+        Student("Charlie", [95, 90, 85])
+    ]
 
-    count = 0
-    for _ in range(10):
-
-        user_id = choice(user_ids)
-        product = choice(products)
-        producer.produce(topic, product, user_id, callback=delivery_callback)
-        count += 1
+    # Produce data for each student
+    for student in students:
+        key = student.name
+        print(student.name)
+        value = ','.join(map(str, student.marks))
+        producer.produce(topic, key=key, value=value, callback=delivery_callback)
 
     # Block until the messages are sent.
-    producer.poll(10000)
     producer.flush()
